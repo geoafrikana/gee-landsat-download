@@ -1,152 +1,200 @@
-# 🌍 Landsat Time-Series Data Downloader (Google Earth Engine)
+# Landsat Land Use and Land Cover Mapping for Osun State
 
-This repository contains scripts for accessing and downloading satellite images from **Landsat 5, Landsat 7, and Landsat 8** using Google Earth Engine.
+This project uses Google Earth Engine and Landsat satellite images to study how land cover in and around Osun State changes over time.
 
-It is designed to help users generate clean, consistent maps of land changes over time—without needing advanced remote sensing or programming experience.
+It is written for simple comparison across selected years, so a user can generate:
 
----
+- cleaned satellite image composites
+- land use and land cover (LULC) maps
+- class area summaries for each year
 
-## 📌 What this project does
+The work focuses on the following years:
 
-This project helps you:
+- 1984
+- 1999
+- 2004
+- 2009
+- 2014
+- 2019
+- 2024
 
-* Download satellite images for any location (e.g., a state or region)
-* Create clear yearly “snapshots” of the Earth’s surface
-* Remove clouds and image noise automatically
-* Combine multiple images into a single clean map
-* Export results to Google Drive for use in GIS software like QGIS or ArcGIS
+Two files are known to be problematic and should not be used for now:
 
----
+- `years/1987_1991_error.js`
+- `years/1991_1997_error.js`
 
-## 🛰️ Satellite data used
+## What This Project Does
 
-This project uses publicly available NASA/USGS Landsat satellites:
+In simple terms, the scripts:
 
-* Landsat 5 (historical data from 1984–2012)
-* Landsat 7 (1999–present, used for older modern years)
-* Landsat 8 (2013–present, high-quality modern imagery)
+1. choose a Nigerian state, currently set to `Osun`
+2. add a buffer around the state boundary
+3. collect Landsat images for a chosen period
+4. remove cloudy and poor-quality pixels
+5. combine many images into one clearer composite image
+6. calculate useful land-cover indicators such as vegetation, built-up, and water indices
+7. classify the land into broad classes
+8. export the results to Google Drive
 
-These satellites provide free, long-term Earth observation data.
+## What The Outputs Mean
 
----
+The final maps group the land into five broad classes:
 
-## 🗺️ What you can analyze with this data
+- Water
+- Vegetation
+- Built-up
+- Bare Land
+- Wetland
 
-You can use the outputs to study:
+Depending on the script you run, you may also get:
 
-* Urban growth (expansion of cities)
-* Forest loss or vegetation change
-* Water body changes (rivers, lakes, wetlands)
-* Agricultural expansion
-* Environmental change over time
+- a natural-colour satellite composite
+- a raw cluster map from the unsupervised model
+- area statistics showing how much land falls into each class
 
----
+## Folder Guide
 
-## 📁 What’s inside this repository
+`landsat-5/`
 
-The repository is organized by satellite type:
+Contains example Google Earth Engine scripts for older Landsat 5 image processing.
 
-```
-📂 landsat-5/
-📂 landsat-7/
-📂 landsat-8/
-```
+`landsat-7/`
 
-Each folder contains Google Earth Engine scripts that:
+Contains example scripts for Landsat 7 image processing.
 
-* Load satellite imagery
-* Clean and filter the data
-* Generate yearly composite images
-* Export results to Google Drive
+`landsat-8/`
 
----
+Contains example scripts for Landsat 8 image processing.
 
-## ⚙️ How it works (simple explanation)
+`years/`
 
-The scripts follow these steps:
+Contains year-by-year composite scripts. These are useful when you only want the processed satellite image for a specific year.
 
-1. Select a location (e.g., a state or region)
-2. Collect satellite images for a time period
-3. Remove clouds and bad-quality pixels
-4. Combine multiple images into one clear map
-5. Standardize all images so they can be compared across years
-6. Export the final images to Google Drive
+`unsupervised-classifications/`
 
----
+Contains the land cover classification scripts. These are the main scripts to use if your goal is to produce LULC maps rather than only satellite composites.
 
-## 📦 Output you will get
+## Most Important Script
 
-After running the scripts, you will receive:
+The main classification idea in this repository is:
 
-* GeoTIFF files (standard GIS image format)
-* One file per year (e.g., 1999, 2004, 2019, 2024)
-* Each file contains:
+- use 1984 as the training reference year
+- train the unsupervised model on the 1984 image
+- apply that same model structure to the other supported years
 
-  * Natural color image (RGB)
-  * Vegetation index (NDVI)
-  * Built-up index (NDBI)
-  * Water index (MNDWI)
+So if your goal is to generate land cover maps, the most important folder is:
 
----
+- `unsupervised-classifications/`
 
-## 💻 Requirements
+The classification scripts there:
 
-You do NOT need to install software locally.
+- build the composite image for the selected year
+- use the same band structure across Landsat 5, 7, and 8
+- calculate `NDVI`, `NDBI`, and `MNDWI`
+- classify the image into land-cover groups
+- smooth the final map
+- export the class map and raw clusters to Google Drive
 
-You only need:
+## Which Script Should You Run?
 
-* A Google account
-* Access to Google Earth Engine: [https://earthengine.google.com/](https://earthengine.google.com/)
-* Google Drive for downloads
+Use `years/*.js` when:
 
----
+- you only want a cleaned composite satellite image for a given year
+- you want to inspect the imagery before classification
 
-## 🚀 How to use
+Use `unsupervised-classifications/*.js` when:
 
-1. Open Google Earth Engine Code Editor
-2. Copy a script from this repository
-3. Choose your area of interest (state or region)
-4. Select the year(s) you want
-5. Run the script
-6. Go to the “Tasks” tab and click **Run**
-7. Download results from Google Drive
+- you want a final land cover map
+- you want class areas for comparison across years
+- you want to reproduce the classification workflow used in this project
 
----
+## Recommended Workflow for Coursemates
 
-## 🧭 Example use case
+If you are new to the project, use this order:
 
-For example, you can compare:
+1. Open a script from `years/` to view the composite image for your year of interest.
+2. Confirm that the image looks reasonable and not heavily affected by cloud.
+3. Open the matching script in `unsupervised-classifications/`.
+4. Change the `stateName` if you want to work on another Nigerian state.
+5. Run the script in Google Earth Engine.
+6. Check the map layers and printed results.
+7. In the `Tasks` tab, run the export to send the output to Google Drive.
 
-* 1999 → rural landscape
-* 2014 → growing settlements
-* 2024 → fully urbanized areas
+## How The Classification Works
 
-This helps visualize how landscapes change over time.
+The classification is unsupervised. This means the script groups similar pixels automatically instead of using hand-labelled training points from a human.
 
----
+To keep the year-to-year comparison more consistent, the workflow:
 
-## ⚠️ Important notes
+- trains the clustering setup from the 1984 data
+- keeps the same important input bands across years
+- reuses the same class interpretation for later years
 
-* Cloud cover may affect image quality in some years
-* Some older satellites have fewer images available
-* Results are best interpreted as **trends**, not exact measurements
-* All data is freely provided by NASA/USGS
+This is helpful for comparison, but it also means later years should still be checked visually before drawing strong conclusions.
 
-## 📬 License
+## Data Used
 
-This project uses free and open satellite data from NASA/USGS Landsat missions.
+The project uses free Landsat data inside Google Earth Engine:
 
-You are free to use, modify, and share these scripts for research and educational purposes.
+- Landsat 5 for older years such as 1984 and 1999
+- Landsat 7 for 2004 and 2009
+- Landsat 8 for 2014, 2019, and 2024
 
----
+The scripts rename the satellite bands so they follow one common format across the different sensors.
 
-## 🤝 Contributions
+## What You Need
 
-If you want to improve this project:
+You do not need to install software on your laptop for basic use.
 
-* Add new regions
-* Improve cloud masking
-* Optimize exports
-* Add visualization tools
+You need:
 
-Feel free to submit a pull request or open an issue.
+- a Google account
+- access to Google Earth Engine
+- Google Drive for exports
+
+Google Earth Engine:
+`https://earthengine.google.com/`
+
+Code Editor:
+`https://code.earthengine.google.com/`
+
+## Simple Steps To Run It
+
+1. Open Google Earth Engine Code Editor.
+2. Copy and paste one script from this repository.
+3. Check the `stateName`, year, and buffer settings.
+4. Click `Run`.
+5. View the map and printed outputs.
+6. Open the `Tasks` tab.
+7. Click `Run` on the export task.
+8. Download the result from Google Drive when it finishes.
+
+## Important Notes
+
+- The default study area is `Osun`.
+- A `10000` metre buffer is added around the state boundary.
+- Most composites are built from a multi-year window, not from a single day image.
+- Some scripts use a November to March seasonal filter to reduce cloud problems and improve consistency.
+- The final maps are best used for broad change analysis, not as perfect ground truth.
+- The two `*_error.js` files should be ignored unless they are repaired later.
+
+## Good Use Cases
+
+This repository can support class projects such as:
+
+- measuring urban expansion
+- comparing vegetation cover between years
+- identifying changes in water and wetland areas
+- showing long-term landscape change in Osun State
+
+## Suggested Way To Explain Results
+
+For non-technical presentation, it is safest to describe the outputs as:
+
+"satellite-based land cover estimates showing broad patterns of change over time"
+
+That wording is better than claiming the maps are exact field measurements.
+
+## Summary
+
+This repository is a time-series land cover mapping workflow for Osun State using Landsat and Google Earth Engine. The `years/` folder is mainly for creating clean yearly images, while `unsupervised-classifications/` is mainly for producing the final land cover maps that can be compared across years.
