@@ -128,24 +128,23 @@ function getCompositeL7(start, end) {
 // ================================
 // BUILD 2009 IMAGE
 // ================================
-var img2009 = getCompositeL7(
-  '2009-01-01',
-  '2009-12-31'
+var img2004 = getCompositeL7(
+  '2002-01-01',
+  '2004-12-31'
 );
 
 
 // ================================
 // VISUALIZATION (same as L8)
 // ================================
-var vis = {
+var visRGB = {
   bands: ['Red','Green','Blue'],
   min: 0,
   max: 0.3,
   gamma: 1.3
 };
 
-Map.addLayer(img2009, vis, '2009 Landsat 7 Composite');
-Map.addLayer(img2009.select('NDVI'), {
+var visNDVI = {
   min: -0.2,
   max: 0.8,
   palette: [
@@ -155,18 +154,20 @@ Map.addLayer(img2009.select('NDVI'), {
     'green',   // healthy vegetation
     'darkgreen'
   ]
-}, 'NDVI')
+}
+Map.addLayer(img2004, visRGB, '2004 Landsat 7 Composite');
+Map.addLayer(img2004.select('NDVI'), visNDVI, 'NDVI')
 
+var training = water.merge(built_area).merge(light_vegetation)
+              .merge(dense_vegetation).merge(bare_soil)
 
-
-var training = ee.FeatureCollection('projects/ornate-lead-196416/assets/training_2009');
 
 
 var label = 'Class';
 var bands = ['Blue', 'Green', 'Red', 'NIR',
               'SWIR1', 'NDVI', 'MNDWI', 'NDBI']; 
-var input = img2009.select(bands);
-print(img2009)
+var input = img2004.select(bands);
+// print(img2009)
 
 //Sample regions to create training data and test dataset
 
@@ -176,11 +177,12 @@ var trainImage = input.sampleRegions({
   scale: 30,
   tileScale: 4
 });
-print(trainImage);
+// print(trainImage);
  
 var trainingData = trainImage.randomColumn();
 var trainSet = trainingData.filter(ee.Filter.lessThan('random', 0.8));  // Training data
-var testSet = trainingData.filter(ee.Filter.greaterThanOrEquals('random', 0.8));  // Validation data
+var testSet = trainingData.filter(
+  ee.Filter.greaterThanOrEquals('random', 0.8));  // Validation data
 
 //Classification Model
 var classifier = ee.Classifier.smileCart().train(trainSet, label, bands);
@@ -193,7 +195,7 @@ var classified = input.classify(classifier);
 Map.addLayer(classified, {
   palette: ['blue', 'red', 'green', 'lightgreen', 'yellow'],
   min: 0, max:4
-  }, 'Land Cover 2009'); 
+  }, 'Land Cover 2004'); 
 
 
 var validation = testSet.classify(classifier);
@@ -204,20 +206,3 @@ print('Confusion Matrix:', testAccuracy);
 print('Overall Accuracy:', testAccuracy.accuracy());
 print('Kappa:', testAccuracy.kappa());
 
-
-/*
-Confusion Matrix:
-List (5 elements)
-0: [27,1,0,2,0]
-1: [1,31,1,0,0]
-2: [0,1,9,0,0]
-3: [2,0,0,12,1]
-4: [0,1,1,1,7]
-
-Overall Accuracy:
-0.8775510204081632
-
-Kappa:
-0.8359146086228547
-
-*/
